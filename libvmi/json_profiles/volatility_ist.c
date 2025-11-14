@@ -254,15 +254,29 @@ const char *volatility_get_os_type(vmi_instance_t vmi)
 
     if (!json_object_object_get_ex(vmi->json.root, "metadata", &metadata)) {
         dbprint(VMI_DEBUG_MISC, "Volatility IST profile: no metadata section found\n");
+        errprint("DEBUG: No metadata section in Volatility IST profile\n");
         return NULL;
     }
 
-    if (json_object_object_get_ex(metadata, "windows", &os))
+    errprint("DEBUG: Volatility IST profile metadata found, checking OS type...\n");
+
+    if (json_object_object_get_ex(metadata, "windows", &os)) {
+        errprint("DEBUG: Found 'windows' key in metadata, returning Windows\n");
         return "Windows";
-    if (json_object_object_get_ex(metadata, "mac", &os))
+    }
+    if (json_object_object_get_ex(metadata, "mac", &os)) {
+        errprint("DEBUG: Found 'mac' key in metadata, returning OSX\n");
         return "OSX";
-    if (json_object_object_get_ex(metadata, "android", &os))
+    }
+    if (json_object_object_get_ex(metadata, "android", &os)) {
+        errprint("DEBUG: Found 'android' key in metadata, returning Android\n");
         return "Android";
+    }
+    if (json_object_object_get_ex(metadata, "linux", &os)) {
+        errprint("DEBUG: Found 'linux' key in metadata, returning Linux\n");
+        return "Linux";
+    }
+    errprint("DEBUG: No specific OS markers found, defaulting to Linux\n");
     return "Linux";
 }
 

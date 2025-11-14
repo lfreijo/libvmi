@@ -249,6 +249,9 @@ set_os_type_from_config(
 
     if ( json_path && json_profile_init(vmi, json_path) )
         ostype = vmi->json.get_os_type(vmi);
+
+    if (ostype)
+        errprint("Detected OS type from JSON profile: %s\n", ostype);
 #endif
 
     if (!ostype) {
