@@ -896,17 +896,21 @@ os_t vmi_init_os(
 
 
     /* setup OS specific stuff */
+    errprint("DEBUG: Entering OS-specific init switch with os_type=%d\n", vmi->os_type);
     switch ( vmi->os_type ) {
 #ifdef ENABLE_LINUX
         case VMI_OS_LINUX:
         case VMI_OS_ANDROID:
+            errprint("DEBUG: Calling linux_init()...\n");
             if (VMI_FAILURE == linux_init(vmi, _config)) {
+                errprint("DEBUG: linux_init() FAILED! Resetting os_type to UNKNOWN\n");
                 vmi->os_type = VMI_OS_UNKNOWN;
                 if ( error )
                     *error = VMI_INIT_ERROR_OS;
 
                 goto error_exit;
             }
+            errprint("DEBUG: linux_init() succeeded\n");
             break;
 #endif
 #ifdef ENABLE_WINDOWS
