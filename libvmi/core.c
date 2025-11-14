@@ -881,14 +881,18 @@ os_t vmi_init_os(
      * will be called from the OS init function as it requires OS-specific
      * heuristics.
      */
+    errprint("DEBUG: About to init paging. mode=%d, page_mode=%d, os_type=%d\n",
+             vmi->mode, vmi->page_mode, vmi->os_type);
     if ( VMI_FILE != vmi->mode && VMI_PM_UNKNOWN == vmi->page_mode &&
             VMI_PM_UNKNOWN == vmi_init_paging(vmi, (vmi->os_type == VMI_OS_WINDOWS) ? VMI_PM_INITFLAG_TRANSITION_PAGES : 0) ) {
+        errprint("DEBUG: Paging initialization FAILED! Resetting os_type to UNKNOWN\n");
         vmi->os_type = VMI_OS_UNKNOWN;
         if ( error )
             *error = VMI_INIT_ERROR_PAGING;
 
         goto error_exit;
     }
+    errprint("DEBUG: Paging initialization succeeded or skipped\n");
 
 
     /* setup OS specific stuff */
