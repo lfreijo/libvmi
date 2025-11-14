@@ -281,8 +281,11 @@ const char* rekall_get_os_type(vmi_instance_t vmi)
     if ( !json_object_object_get_ex(metadata, "ProfileClass", &os) )
         return NULL;
 
-    if ( !strcmp("Linux", json_object_get_string(os)) )
+    const char *profile_class = json_object_get_string(os);
+    if ( !strcmp("Linux", profile_class) )
         return "Linux";
+    else if ( !strcmp("Android", profile_class) )
+        return "Android";
     else
         return "Windows";
 

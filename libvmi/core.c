@@ -274,6 +274,9 @@ set_os_type_from_config(
     } else if (!strcmp(ostype, "OSX")) {
         vmi->os_type = VMI_OS_OSX;
         ret = VMI_SUCCESS;
+    } else if (!strcmp(ostype, "Android")) {
+        vmi->os_type = VMI_OS_ANDROID;
+        ret = VMI_SUCCESS;
     } else {
         errprint("VMI_ERROR: Unknown OS type: %s!\n", ostype);
         ret = VMI_FAILURE;
@@ -284,8 +287,10 @@ set_os_type_from_config(
         dbprint(VMI_DEBUG_CORE, "**set os_type to Linux.\n");
     } else if (vmi->os_type == VMI_OS_WINDOWS) {
         dbprint(VMI_DEBUG_CORE, "**set os_type to Windows.\n");
-    }     else if (vmi->os_type == VMI_OS_FREEBSD) {
+    } else if (vmi->os_type == VMI_OS_FREEBSD) {
         dbprint(VMI_DEBUG_CORE, "**set os_type to FreeBSD.\n");
+    } else if (vmi->os_type == VMI_OS_ANDROID) {
+        dbprint(VMI_DEBUG_CORE, "**set os_type to Android.\n");
     } else {
         dbprint(VMI_DEBUG_CORE, "**set os_type to unknown.\n");
     }
@@ -874,7 +879,7 @@ os_t vmi_init_os(
      * heuristics.
      */
     if ( VMI_FILE != vmi->mode && VMI_PM_UNKNOWN == vmi->page_mode &&
-            VMI_PM_UNKNOWN == vmi_init_paging(vmi, vmi->os_type == VMI_OS_WINDOWS ? VMI_PM_INITFLAG_TRANSITION_PAGES : 0) ) {
+            VMI_PM_UNKNOWN == vmi_init_paging(vmi, (vmi->os_type == VMI_OS_WINDOWS) ? VMI_PM_INITFLAG_TRANSITION_PAGES : 0) ) {
         vmi->os_type = VMI_OS_UNKNOWN;
         if ( error )
             *error = VMI_INIT_ERROR_PAGING;
@@ -887,6 +892,7 @@ os_t vmi_init_os(
     switch ( vmi->os_type ) {
 #ifdef ENABLE_LINUX
         case VMI_OS_LINUX:
+        case VMI_OS_ANDROID:
             if (VMI_FAILURE == linux_init(vmi, _config)) {
                 vmi->os_type = VMI_OS_UNKNOWN;
                 if ( error )

@@ -154,8 +154,8 @@ int main(int argc, char **argv)
 
     os_t os = vmi_init_os(vmi, VMI_CONFIG_JSON_PATH, kernel_profile, NULL);
 
-    if (VMI_OS_LINUX != os) {
-        fprintf(stderr, "OS is not Linux\n");
+    if (VMI_OS_LINUX != os && VMI_OS_ANDROID != os) {
+        fprintf(stderr, "OS is not Linux or Android\n");
         goto done;
     }
 
