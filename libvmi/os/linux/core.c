@@ -527,6 +527,8 @@ status_t linux_init(vmi_instance_t vmi, GHashTable *config)
     status_t rc;
     os_interface_t os_interface = NULL;
 
+    errprint("DEBUG: linux_init() starting\n");
+
     if (!config) {
         errprint("No config table found\n");
         return VMI_FAILURE;
@@ -545,22 +547,28 @@ status_t linux_init(vmi_instance_t vmi, GHashTable *config)
 
     g_hash_table_foreach(config, (GHFunc)linux_read_config_ghashtable_entries, vmi);
 
+    errprint("DEBUG: Calling init_from_json_profile()\n");
     rc = init_from_json_profile(vmi);
+    errprint("DEBUG: init_from_json_profile() returned %d\n", rc);
 
-    if ( VMI_FAILURE == rc && !vmi->init_task )
+    if ( VMI_FAILURE == rc && !vmi->init_task ) {
+        errprint("DEBUG: Trying linux_symbol_to_address for init_task\n");
         rc = linux_symbol_to_address(vmi, "init_task", NULL, &vmi->init_task);
-    else
+        errprint("DEBUG: linux_symbol_to_address returned %d\n", rc);
+    } else
         rc = VMI_SUCCESS;
 
     if ( VMI_FAILURE == rc ) {
         errprint("Failed to determine init_task!\n");
         goto _exit;
     }
+    errprint("DEBUG: init_task determined: 0x%lx\n", vmi->init_task);
 
     /* Save away the claimed init_task addr. It may be needed again for KASLR computation. */
     vmi->init_task = canonical_addr(vmi->init_task);
     linux_instance->init_task_fixed = vmi->init_task;
 
+    errprint("DEBUG: Getting kpgd (current: 0x%lx)\n", vmi->kpgd);
     if ( !vmi->kpgd ) {
 #if defined(ARM32) || defined(ARM64)
         rc = driver_get_vcpureg(vmi, &vmi->kpgd, TTBR1, 0);
@@ -568,6 +576,7 @@ status_t linux_init(vmi_instance_t vmi, GHashTable *config)
         rc = driver_get_vcpureg(vmi, &vmi->kpgd, CR3, 0);
         vmi->kpgd &= ~0x1fffull; // mask PCID and meltdown bits
 #endif
+        errprint("DEBUG: driver_get_vcpureg returned %d, kpgd=0x%lx\n", rc, vmi->kpgd);
     }
 
     /*
@@ -575,17 +584,30 @@ status_t linux_init(vmi_instance_t vmi, GHashTable *config)
      * As a fall-back, try to init using heuristics.
      * This path is taken in FILE mode as well.
      */
-    if ( VMI_FAILURE == rc && VMI_FAILURE == linux_filemode_init(vmi) )
-        goto _exit;
+    if ( VMI_FAILURE == rc ) {
+        errprint("DEBUG: driver_get_vcpureg failed, trying linux_filemode_init\n");
+        if ( VMI_FAILURE == linux_filemode_init(vmi) ) {
+            errprint("DEBUG: linux_filemode_init FAILED\n");
+            goto _exit;
+        }
+        errprint("DEBUG: linux_filemode_init succeeded\n");
+    }
 
+    errprint("DEBUG: Checking KASLR (current offset: 0x%lx)\n", linux_instance->kaslr_offset);
     if ( !linux_instance->kaslr_offset ) {
+        errprint("DEBUG: Calling init_kaslr()\n");
         if ( VMI_FAILURE == init_kaslr(vmi) ) {
+            errprint("DEBUG: init_kaslr failed, trying with Meltdown bit\n");
             // try without masking Meltdown bit
             vmi->kpgd |= 0x1000ull;
             if ( VMI_FAILURE == init_kaslr(vmi) ) {
                 dbprint(VMI_DEBUG_MISC, "**failed to determine KASLR offset\n");
+                errprint("DEBUG: init_kaslr FAILED even with Meltdown bit\n");
                 goto _exit;
             }
+            errprint("DEBUG: init_kaslr succeeded with Meltdown bit\n");
+        } else {
+            errprint("DEBUG: init_kaslr succeeded\n");
         }
     }
 
