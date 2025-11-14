@@ -602,10 +602,12 @@ status_t linux_init(vmi_instance_t vmi, GHashTable *config)
             vmi->kpgd |= 0x1000ull;
             if ( VMI_FAILURE == init_kaslr(vmi) ) {
                 dbprint(VMI_DEBUG_MISC, "**failed to determine KASLR offset\n");
-                errprint("DEBUG: init_kaslr FAILED even with Meltdown bit\n");
-                goto _exit;
+                errprint("WARNING: Could not determine KASLR offset, assuming 0 (KASLR disabled or Android kernel)\n");
+                linux_instance->kaslr_offset = 0;
+                // Don't fail - continue with KASLR offset of 0
+            } else {
+                errprint("DEBUG: init_kaslr succeeded with Meltdown bit\n");
             }
-            errprint("DEBUG: init_kaslr succeeded with Meltdown bit\n");
         } else {
             errprint("DEBUG: init_kaslr succeeded\n");
         }
