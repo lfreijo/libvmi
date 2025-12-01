@@ -890,8 +890,9 @@ os_t vmi_init_os(
      */
     errprint("DEBUG: About to init paging. mode=%d, page_mode=%d, os_type=%d\n",
              vmi->mode, vmi->page_mode, vmi->os_type);
-    if ( VMI_FILE != vmi->mode && VMI_PM_UNKNOWN == vmi->page_mode &&
-            VMI_PM_UNKNOWN == vmi_init_paging(vmi, (vmi->os_type == VMI_OS_WINDOWS) ? VMI_PM_INITFLAG_TRANSITION_PAGES : 0) ) {
+    /* Check for invalid page modes: VMI_PM_NONE (0) or VMI_PM_UNKNOWN (1) */
+    if ( VMI_FILE != vmi->mode && vmi->page_mode <= VMI_PM_UNKNOWN &&
+            vmi_init_paging(vmi, (vmi->os_type == VMI_OS_WINDOWS) ? VMI_PM_INITFLAG_TRANSITION_PAGES : 0) <= VMI_PM_UNKNOWN ) {
         errprint("DEBUG: Paging initialization FAILED! Resetting os_type to UNKNOWN\n");
         vmi->os_type = VMI_OS_UNKNOWN;
         if ( error )
