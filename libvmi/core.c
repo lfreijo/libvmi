@@ -754,13 +754,19 @@ page_mode_t vmi_init_paging(
     vmi_instance_t vmi,
     uint64_t flags)
 {
+    errprint("DEBUG: vmi_init_paging() called, flags=%lu\n", (unsigned long)flags);
+
     if ( !vmi )
         return VMI_PM_UNKNOWN;
 
     vmi->page_mode = VMI_PM_UNKNOWN;
 
-    if ( VMI_FAILURE == arch_init(vmi) )
+    errprint("DEBUG: Calling arch_init()\n");
+    if ( VMI_FAILURE == arch_init(vmi) ) {
+        errprint("DEBUG: arch_init() FAILED\n");
         return VMI_PM_UNKNOWN;
+    }
+    errprint("DEBUG: arch_init() succeeded, page_mode=%d\n", vmi->page_mode);
 
     if ( flags ) {
         switch (vmi->page_mode) {
@@ -775,6 +781,7 @@ page_mode_t vmi_init_paging(
         };
     }
 
+    errprint("DEBUG: vmi_init_paging() returning page_mode=%d\n", vmi->page_mode);
     return vmi->page_mode;
 }
 
