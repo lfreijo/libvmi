@@ -422,10 +422,10 @@ static status_t init_kaslr(vmi_instance_t vmi)
             return VMI_SUCCESS;
     }
 
-    /* Safety check: don't try to walk page tables if kpgd is invalid or page_mode is unknown */
-    if ( !vmi->kpgd || vmi->page_mode == VMI_PM_UNKNOWN ) {
-        errprint("DEBUG: Cannot walk page tables - kpgd=0x%lx, page_mode=%d\n",
-                 (unsigned long)vmi->kpgd, vmi->page_mode);
+    /* Safety check: don't try to walk page tables if kpgd is invalid or page_mode is not set */
+    if ( !vmi->kpgd || vmi->page_mode <= VMI_PM_UNKNOWN ) {
+        errprint("DEBUG: Cannot walk page tables - kpgd=0x%lx, page_mode=%d (need valid kpgd and page_mode > %d)\n",
+                 (unsigned long)vmi->kpgd, vmi->page_mode, VMI_PM_UNKNOWN);
         return VMI_FAILURE;
     }
 
