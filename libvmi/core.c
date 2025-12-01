@@ -1017,12 +1017,15 @@ vmi_init_complete(
     /*
      * For file-mode initialization OS specific heuristics are required,
      * which are being called in vmi_init_os.
+     *
+     * Note: We attempt paging init here for auto-detection via arch_init(),
+     * but don't fail if it returns VMI_PM_UNKNOWN - vmi_init_os() will load
+     * the config/JSON profile which may provide the page_mode, and then
+     * retry paging initialization.
      */
-    if ( VMI_FILE != mode && VMI_PM_UNKNOWN == vmi_init_paging(_vmi, 0) ) {
-        if ( error )
-            *error = VMI_INIT_ERROR_PAGING;
-
-        goto error_exit;
+    if ( VMI_FILE != mode ) {
+        vmi_init_paging(_vmi, 0);
+        /* Don't fail here - vmi_init_os will retry after loading config */
     }
 
     if ( VMI_OS_UNKNOWN == vmi_init_os(_vmi, config_mode, config, error) )
