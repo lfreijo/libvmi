@@ -280,6 +280,57 @@ const char *volatility_get_os_type(vmi_instance_t vmi)
     return "Linux";
 }
 
+page_mode_t volatility_get_page_mode(vmi_instance_t vmi)
+{
+    json_object *metadata = NULL, *os_section = NULL, *arch = NULL;
+    const char *arch_str = NULL;
+
+    if (!json_object_object_get_ex(vmi->json.root, "metadata", &metadata)) {
+        dbprint(VMI_DEBUG_MISC, "Volatility IST profile: no metadata section found\n");
+        return VMI_PM_UNKNOWN;
+    }
+
+    /* Check each OS section for architecture info */
+    if (json_object_object_get_ex(metadata, "android", &os_section) ||
+        json_object_object_get_ex(metadata, "linux", &os_section) ||
+        json_object_object_get_ex(metadata, "windows", &os_section) ||
+        json_object_object_get_ex(metadata, "mac", &os_section)) {
+
+        if (json_object_object_get_ex(os_section, "arch", &arch)) {
+            arch_str = json_object_get_string(arch);
+            errprint("DEBUG: Volatility IST profile arch: %s\n", arch_str ? arch_str : "NULL");
+
+            if (arch_str) {
+                if (!strcmp(arch_str, "Intel64") || !strcmp(arch_str, "AMD64") ||
+                    !strcmp(arch_str, "x86_64") || !strcmp(arch_str, "x64")) {
+                    return VMI_PM_IA32E;
+                }
+                if (!strcmp(arch_str, "Intel32") || !strcmp(arch_str, "x86") ||
+                    !strcmp(arch_str, "i386") || !strcmp(arch_str, "i686")) {
+                    /* Could be PAE or legacy, return PAE as default for 32-bit */
+                    return VMI_PM_PAE;
+                }
+                if (!strcmp(arch_str, "AArch64") || !strcmp(arch_str, "arm64") ||
+                    !strcmp(arch_str, "ARM64")) {
+                    return VMI_PM_AARCH64;
+                }
+                if (!strcmp(arch_str, "AArch32") || !strcmp(arch_str, "arm") ||
+                    !strcmp(arch_str, "ARM32") || !strcmp(arch_str, "ARM")) {
+                    return VMI_PM_AARCH32;
+                }
+            }
+        }
+    }
+
+    /* For Android, default to ARM64 if no arch specified */
+    if (json_object_object_get_ex(metadata, "android", &os_section)) {
+        errprint("DEBUG: Android detected without explicit arch, defaulting to AARCH64\n");
+        return VMI_PM_AARCH64;
+    }
+
+    return VMI_PM_UNKNOWN;
+}
+
 status_t
 volatility_profile_bitfield_offset_and_size(
     json_object *json,

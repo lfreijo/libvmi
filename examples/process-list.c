@@ -266,11 +266,13 @@ int main (int argc, char **argv)
 
     retcode = 0;
 error_exit:
-    /* resume the vm */
-    vmi_resume_vm(vmi);
+    if (vmi) {
+        /* resume the vm */
+        vmi_resume_vm(vmi);
 
-    /* cleanup any memory associated with the LibVMI instance */
-    vmi_destroy(vmi);
+        /* cleanup any memory associated with the LibVMI instance */
+        vmi_destroy(vmi);
+    }
 
     if (init_data) {
         free(init_data->entry[0].data);

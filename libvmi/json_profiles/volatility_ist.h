@@ -40,6 +40,8 @@ volatility_build_reverse_symbol_table(
 
 const char* volatility_get_os_type(vmi_instance_t vmi);
 
+page_mode_t volatility_get_page_mode(vmi_instance_t vmi);
+
 status_t
 volatility_profile_bitfield_offset_and_size(
     json_object *json,
@@ -78,6 +80,11 @@ static inline status_t volatility_build_reverse_symbol_table(
 static inline const char* volatility_get_os_type(vmi_instance_t vmi)
 {
     return NULL;
+}
+
+static inline page_mode_t volatility_get_page_mode(vmi_instance_t vmi)
+{
+    return VMI_PM_UNKNOWN;
 }
 
 static inline status_t

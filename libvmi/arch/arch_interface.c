@@ -205,7 +205,15 @@ status_t get_vcpu_page_mode(vmi_instance_t vmi, unsigned long vcpu, page_mode_t 
     }
 
     if (VMI_SUCCESS == get_vcpu_page_mode_x86(vmi, vcpu, out_pm)) {
-        return VMI_SUCCESS;
+        /* If x86 detection succeeded with a real paging mode, use it.
+         * If it returned VMI_PM_NONE (paging disabled), still try ARM
+         * detection since this might be an ARM VM where x86 register
+         * reads returned garbage/zero values. */
+        page_mode_t detected = out_pm ? *out_pm : vmi->page_mode;
+        if (detected != VMI_PM_NONE) {
+            return VMI_SUCCESS;
+        }
+        dbprint(VMI_DEBUG_PTLOOKUP, "x86 detection returned VMI_PM_NONE, trying ARM detection\n");
     }
     if (VMI_SUCCESS == get_vcpu_page_mode_arm(vmi, vcpu, out_pm)) {
         return VMI_SUCCESS;

@@ -754,10 +754,16 @@ page_mode_t vmi_init_paging(
     vmi_instance_t vmi,
     uint64_t flags)
 {
-    errprint("DEBUG: vmi_init_paging() called, flags=%lu\n", (unsigned long)flags);
+    errprint("DEBUG: vmi_init_paging() called, flags=%lu, current page_mode=%d\n", (unsigned long)flags, vmi ? vmi->page_mode : -1);
 
     if ( !vmi )
         return VMI_PM_UNKNOWN;
+
+    /* If page_mode was already set from config, skip auto-detection */
+    if ( vmi->page_mode > VMI_PM_UNKNOWN ) {
+        errprint("DEBUG: page_mode already set to %d from config, skipping arch_init()\n", vmi->page_mode);
+        return vmi->page_mode;
+    }
 
     vmi->page_mode = VMI_PM_UNKNOWN;
 
@@ -847,6 +853,16 @@ GHashTable *init_config(vmi_instance_t vmi, vmi_config_t config_mode, void *conf
     if (VMI_PM_UNKNOWN == vmi->page_mode) {
         vmi->page_mode = get_pagemode_from_config(_config);
     }
+
+#ifdef ENABLE_JSON_PROFILES
+    /* If page_mode still unknown and we have a JSON profile, try to detect from profile */
+    if (VMI_PM_UNKNOWN == vmi->page_mode && vmi->json.root) {
+        vmi->page_mode = volatility_get_page_mode(vmi);
+        if (vmi->page_mode != VMI_PM_UNKNOWN) {
+            errprint("DEBUG: Detected page_mode=%d from JSON profile\n", vmi->page_mode);
+        }
+    }
+#endif
 
     if (VMI_PM_AARCH64 == vmi->page_mode) {
         g_hash_table_foreach(_config, (GHFunc)read_config_aarch64_entries, vmi);
