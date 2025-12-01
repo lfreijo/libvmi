@@ -553,7 +553,13 @@ vmi_translate_ksym2v(
             addr_t _base_vaddr;
             status = vmi->os_interface->os_ksym2v(vmi, symbol, &_base_vaddr, &address);
             if ( VMI_SUCCESS == status ) {
-                address = canonical_addr(address);
+                /* Skip canonicalization for direct-mapping style addresses
+                 * (upper 16 bits are 0 but bit 47 is set) - used by some
+                 * kernels like BlissOS/Android x86 */
+                if (!((address & 0xffff000000000000ULL) == 0 &&
+                      (address & 0x0000800000000000ULL) != 0)) {
+                    address = canonical_addr(address);
+                }
                 sym_cache_set(vmi, 0, 0, symbol, address);
             }
         }

@@ -571,8 +571,24 @@ status_t linux_init(vmi_instance_t vmi, GHashTable *config)
     }
     errprint("DEBUG: init_task determined: 0x%lx\n", vmi->init_task);
 
-    /* Save away the claimed init_task addr. It may be needed again for KASLR computation. */
-    vmi->init_task = canonical_addr(vmi->init_task);
+    /* Save away the claimed init_task addr. It may be needed again for KASLR computation.
+     *
+     * Note: canonical_addr() sign-extends bit 47, which is correct for standard
+     * kernel addresses (0xffffffff8...). However, some kernels (like BlissOS/Android x86)
+     * use addresses in the direct mapping range (0x0000ffff8...) where bit 47 is set
+     * but the upper bits should remain 0. In this case, canonicalization would
+     * corrupt the address.
+     *
+     * We skip canonicalization if the address looks like it's already in the
+     * direct mapping range (upper 16 bits are 0 but bit 47 is set).
+     */
+    if (!((vmi->init_task & 0xffff000000000000ULL) == 0 &&
+          (vmi->init_task & 0x0000800000000000ULL) != 0)) {
+        /* Not a direct-mapping style address, safe to canonicalize */
+        vmi->init_task = canonical_addr(vmi->init_task);
+    } else {
+        errprint("DEBUG: Skipping canonicalization for direct-mapping address 0x%lx\n", vmi->init_task);
+    }
     linux_instance->init_task_fixed = vmi->init_task;
 
     errprint("DEBUG: Getting kpgd (current: 0x%lx)\n", vmi->kpgd);
