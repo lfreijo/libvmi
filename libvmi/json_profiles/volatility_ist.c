@@ -283,6 +283,7 @@ const char *volatility_get_os_type(vmi_instance_t vmi)
 page_mode_t volatility_get_page_mode(vmi_instance_t vmi)
 {
     json_object *metadata = NULL, *os_section = NULL, *arch = NULL;
+    json_object *symbols = NULL;
     const char *arch_str = NULL;
 
     if (!json_object_object_get_ex(vmi->json.root, "metadata", &metadata)) {
@@ -326,6 +327,29 @@ page_mode_t volatility_get_page_mode(vmi_instance_t vmi)
     if (json_object_object_get_ex(metadata, "android", &os_section)) {
         errprint("DEBUG: Android detected without explicit arch, defaulting to AARCH64\n");
         return VMI_PM_AARCH64;
+    }
+
+    /* Try to detect architecture from symbols section */
+    if (json_object_object_get_ex(vmi->json.root, "symbols", &symbols)) {
+        json_object *arm_symbol = NULL;
+        json_object *x86_symbol = NULL;
+
+        /* Check for ARM-specific symbols */
+        if (json_object_object_get_ex(symbols, "__boot_cpu_mode", &arm_symbol) ||
+            json_object_object_get_ex(symbols, "arm64_memblock_init", &arm_symbol) ||
+            json_object_object_get_ex(symbols, "__hyp_stub_vectors", &arm_symbol) ||
+            json_object_object_get_ex(symbols, "cpu_do_idle", &arm_symbol)) {
+            errprint("DEBUG: Detected ARM64 kernel from symbols\n");
+            return VMI_PM_AARCH64;
+        }
+
+        /* Check for x86-specific symbols */
+        if (json_object_object_get_ex(symbols, "native_load_idt", &x86_symbol) ||
+            json_object_object_get_ex(symbols, "native_load_gdt", &x86_symbol) ||
+            json_object_object_get_ex(symbols, "x86_init", &x86_symbol)) {
+            errprint("DEBUG: Detected x86_64 kernel from symbols\n");
+            return VMI_PM_IA32E;
+        }
     }
 
     return VMI_PM_UNKNOWN;

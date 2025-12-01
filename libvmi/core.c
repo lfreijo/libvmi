@@ -850,15 +850,16 @@ GHashTable *init_config(vmi_instance_t vmi, vmi_config_t config_mode, void *conf
         return NULL;
     }
 
-    if (VMI_PM_UNKNOWN == vmi->page_mode) {
+    /* Check if page_mode needs to be set - VMI_PM_NONE (0) and VMI_PM_UNKNOWN (1) are invalid */
+    if (vmi->page_mode <= VMI_PM_UNKNOWN) {
         vmi->page_mode = get_pagemode_from_config(_config);
     }
 
 #ifdef ENABLE_JSON_PROFILES
-    /* If page_mode still unknown and we have a JSON profile, try to detect from profile */
-    if (VMI_PM_UNKNOWN == vmi->page_mode && vmi->json.root) {
+    /* If page_mode still unknown/none and we have a JSON profile, try to detect from profile */
+    if (vmi->page_mode <= VMI_PM_UNKNOWN && vmi->json.root) {
         vmi->page_mode = volatility_get_page_mode(vmi);
-        if (vmi->page_mode != VMI_PM_UNKNOWN) {
+        if (vmi->page_mode > VMI_PM_UNKNOWN) {
             errprint("DEBUG: Detected page_mode=%d from JSON profile\n", vmi->page_mode);
         }
     }
