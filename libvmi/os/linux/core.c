@@ -422,6 +422,13 @@ static status_t init_kaslr(vmi_instance_t vmi)
             return VMI_SUCCESS;
     }
 
+    /* Safety check: don't try to walk page tables if kpgd is invalid or page_mode is unknown */
+    if ( !vmi->kpgd || vmi->page_mode == VMI_PM_UNKNOWN ) {
+        errprint("DEBUG: Cannot walk page tables - kpgd=0x%lx, page_mode=%d\n",
+                 (unsigned long)vmi->kpgd, vmi->page_mode);
+        return VMI_FAILURE;
+    }
+
     status_t ret = VMI_FAILURE;
     GSList *loop, *pages = vmi_get_va_pages(vmi, vmi->kpgd);
     loop = pages;
